@@ -5,7 +5,7 @@ Tells a slack channel what you're listening to.
 
 Instructions
 
-1. Build (applescript-json)[https://github.com/mgax/applescript-json] following its directions
+1. Build [applescript-json](https://github.com/mgax/applescript-json) following its directions
 2. Copy the output to `json.scpt` in this directory
 3. Build the app
 
