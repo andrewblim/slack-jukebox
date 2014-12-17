@@ -21,9 +21,9 @@ on replace_chars(this_text, search_string, replacement_string)
 end replace_chars
 
 on clean_chars(this_text)
-	set this_text to my replace_chars(this_text, "\\", "\\u005c")
-	set this_text to my replace_chars(this_text, "'", "\\u0027")
-	set this_text to my replace_chars(this_text, "\"", "\\u0022")
+	set this_text to my replace_chars(this_text, "\\", "\\\\")
+	set this_text to my replace_chars(this_text, "'", "'\"'\"")
+	set this_text to my replace_chars(this_text, "\"", "\\\"")
 	return this_text
 end clean_chars
 
