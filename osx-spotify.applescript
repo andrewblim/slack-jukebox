@@ -1,13 +1,15 @@
 
-property slack_webhook : "[your hook here]"
+property slack_webhook : ""
 property icon_emoji : ":musical_note:"
 
-property chunk_size : 1
+property chunk_size : 8
 property recent_tracks : {}
 
 property current_track_url : ""
 
 -- replace_chars is directly from hawleykc's song-to-slack
+-- https://github.com/hawleykc/current-song-to-slack
+-- no license attached to it, but it's not my own
 
 on replace_chars(this_text, search_string, replacement_string)
 	set AppleScript's text item delimiters to the search_string
@@ -19,12 +21,16 @@ on replace_chars(this_text, search_string, replacement_string)
 end replace_chars
 
 on clean_chars(this_text)
-	-- set this_text to my replace_chars(this_text, "\\", "\\u005c")
+	set this_text to my replace_chars(this_text, "\\", "\\u005c")
 	set this_text to my replace_chars(this_text, "'", "\\u0027")
-	-- set this_text to my replace_chars(this_text, "\"", "\\u0022")
+	set this_text to my replace_chars(this_text, "\"", "\\u0022")
 	return this_text
 end clean_chars
 
+tell application "Finder"
+	set slack_webhook to read file ((path to me as text) & "::slack-webhook.txt")
+	set slack_webhook to my replace_chars(slack_webhook, "\n", "")
+end tell
 
 on idle
 	
@@ -50,10 +56,10 @@ on idle
 						set slack_payload_fallback to ""
 						
 						repeat with this_track in recent_tracks
-							
-							set this_track_name to item 1 of my clean_chars(this_track)
-							set this_track_artist to item 2 of my clean_chars(this_track)
-							set this_track_url to item 4 of my clean_chars(this_track)
+
+							set this_track_name to my clean_chars(item 1 of this_track)
+							set this_track_artist to my clean_chars(item 2 of this_track)
+							set this_track_url to my clean_chars(item 4 of this_track)
 							
 							set slack_track_text to this_track_artist & " - <" & this_track_url & "|" & this_track_name & ">"
 							set slack_payload_fields to slack_payload_fields & json's createDictWith({{"value", slack_track_text}, {"short", "false"}})
@@ -64,8 +70,8 @@ on idle
 						set slack_payload to json's encode(json's createDictWith({{"icon_emoji", icon_emoji}, {"fallback", slack_payload_fallback}, {"fields", slack_payload_fields}}))
 						set slack_curl_command to "curl -X POST --data-urlencode 'payload=" & slack_payload & "' " & slack_webhook
 						
-						display alert slack_curl_command
-						-- do shell script slack_curl_command
+						-- display alert slack_curl_command
+						do shell script slack_curl_command
 						set recent_tracks to {}
 						set recent_artists to {}
 						set recent_albums to {}

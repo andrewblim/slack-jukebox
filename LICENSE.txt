@@ -1,4 +1,5 @@
-for json.scpt file:
+
+Applicable to json.applescript:
 
 The MIT License (MIT)
 
