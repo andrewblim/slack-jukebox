@@ -2,7 +2,7 @@
 property slack_webhook : ""
 property icon_emoji : ":musical_note:"
 
-property chunk_size : 8
+property chunk_size : 10
 property recent_tracks : {}
 
 property current_track_url : ""
@@ -19,13 +19,6 @@ on replace_chars(this_text, search_string, replacement_string)
 	set AppleScript's text item delimiters to ""
 	return this_text
 end replace_chars
-
-on clean_chars(this_text)
-	set this_text to my replace_chars(this_text, "\\", "\\\\")
-	set this_text to my replace_chars(this_text, "'", "'\"'\"")
-	set this_text to my replace_chars(this_text, "\"", "\\\"")
-	return this_text
-end clean_chars
 
 tell application "Finder"
 	set slack_webhook to read file ((path to me as text) & "::slack-webhook.txt")
@@ -57,10 +50,15 @@ on idle
 						
 						repeat with this_track in recent_tracks
 
-							set this_track_name to my clean_chars(item 1 of this_track)
-							set this_track_artist to my clean_chars(item 2 of this_track)
-							set this_track_url to my clean_chars(item 4 of this_track)
-							
+							set this_track_name to item 1 of this_track
+							set this_track_artist to item 2 of this_track
+							set this_track_url to item 4 of this_track
+
+							set this_track_name to my replace_chars(this_track_name, "<", "&lt;")
+							set this_track_name to my replace_chars(this_track_name, ">", "&gt;")
+							set this_track_artist to my replace_chars(this_track_artist, "<", "&lt;")
+							set this_track_artist to my replace_chars(this_track_artist, ">", "&gt;")
+
 							set slack_track_text to this_track_artist & " - <" & this_track_url & "|" & this_track_name & ">"
 							set slack_payload_fields to slack_payload_fields & json's createDictWith({{"value", slack_track_text}, {"short", "false"}})
 							set slack_payload_fallback to slack_payload_fallback & slack_track_text & " // "
@@ -68,10 +66,19 @@ on idle
 						end repeat
 						
 						set slack_payload to json's encode(json's createDictWith({{"icon_emoji", icon_emoji}, {"fallback", slack_payload_fallback}, {"fields", slack_payload_fields}}))
-						set slack_curl_command to "curl -X POST --data-urlencode 'payload=" & slack_payload & "' " & slack_webhook
-						
-						-- display alert slack_curl_command
+
+						-- write it to a tempfile, don't have to deal with funny escaping
+
+						set tempfile to (do shell script "mktemp -t temp")
+						set fp to open for access tempfile with write permission
+						write slack_payload to fp
+						close access fp
+
+						set slack_curl_command to "curl -X POST --data-urlencode payload@" & tempfile & " " & slack_webhook
+						display alert slack_curl_command
 						do shell script slack_curl_command
+
+						do shell script "rm -f " & tempfile
 						set recent_tracks to {}
 						set recent_artists to {}
 						set recent_albums to {}
